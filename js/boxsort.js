@@ -6,9 +6,10 @@ var mainline = new Array();
 var backline = new Array();
 var outfeeds = new Array();
 
-var transfers = [27,400,600,800,950];
-
+var transfers = [150,400,600,800,950];
 var loadpos = 10;
+var exitpos = 990;
+
 var halfsecs = 0;
 
 var MAINBELT_LENGTH = 1000;
@@ -17,7 +18,7 @@ var BACKBELT_LENGTH = 1000;
 var OUTFEED_COUNT = 5;
 var OUTFEED_LENGTH = 100;
 
-var PARCEL_FREQUENCY = 4;
+var PARCEL_FREQUENCY = 10;
 
 var PARCEL_SMALL = 1;
 var PARCEL_MEDIUM = 2;
@@ -53,9 +54,10 @@ function keyPressed(e) {
 
 	switch (e.keyCode) {
 		case 49 :
-			alert(mainline[transfers[0]]);
+			//alert(mainline[transfers[0]]);
 			if (mainline[transfers[0]] != 0) {
 				moveParcel(mainline[transfers[0]], 'out1');
+				mainline[transfers[0]] = 0;
 			}
 		break;
 
@@ -86,27 +88,47 @@ function keyPressed(e) {
 }
 
 
+function moveTransfers() {
+
+	for (var i=0; i<transfers.length; i++) {
+		transfers[i]--;
+		if (transfers[i] < 0) transfers[i] = MAINBELT_LENGTH-1;
+	}
+}
+
+
+
 function onTimer() {
-	loadpos++;
-	if (loadpos >= MAINBELT_LENGTH)
-		loadpos = 0;
 
+	// move load/scan position
+	loadpos--;
+	if (loadpos < 0) loadpos = MAINBELT_LENGTH-1;
 
+	// move exit position
+	exitpos--;
+	if (exitpos < 0) exitpos = MAINBELT_LENGTH-1;
+	
+	// move transfers
+	moveTransfers();
+	
+	// generate new parcel after preset 'gap'
 	if ((halfsecs % PARCEL_FREQUENCY) == 0) {
-
 		mainline[loadpos] = newParcel(loadpos, 1, 'main');
-
 		debug();
 	}
 
-	//outputwindow.innerHTML = mainline;
+	// when parcels reach end of main line, move them to the back line
+	if (mainline[exitpos] != 0) {
+		moveParcel(mainline[exitpos], 'back');
+	}
 
+	//outputwindow.innerHTML = mainline;
 	halfsecs++;
 }
 
 
 function newParcel(loadpos, boxtype, belt) {
-	var parcel = {pos:loadpos, type:boxtype, loc:belt};
+	var parcel = {id:parcelList.length+1, type:boxtype, loc:belt};
 	return parcelList.push(parcel);
 }
 
@@ -114,8 +136,8 @@ function newParcel(loadpos, boxtype, belt) {
 function moveParcel(parcelid, belt) {
 	
 	for (i=0; i < parcelList.length; i++) {
-		if (parcelList[i].pos == parcelid) {
-			//alert(parcelList[i].pos);
+		if (parcelList[i].id == parcelid) {
+			//alert(parcelList[i].id);
 			parcelList[i].loc = belt;
 
 			switch (belt) {
@@ -124,7 +146,7 @@ function moveParcel(parcelid, belt) {
 				case 'out3' : outfeeds[2][0] = parcelid; break;
 				case 'out4' : outfeeds[3][0] = parcelid; break;
 				case 'out5' : outfeeds[4][0] = parcelid; break;
-				case 'back' : backline[0] = id; break;
+				case 'back' : backline[0] = parcelid; break;
 			}
 		}
 	}
@@ -135,6 +157,7 @@ function debug() {
 	console.log('main: ' + mainline);
 	//console.log('back: ' + backline);
 	//console.log('outfeeds: ' + outfeeds);
+	console.log(transfers);
 	console.log(outfeeds[0]);
 	console.log(parcelList);
 

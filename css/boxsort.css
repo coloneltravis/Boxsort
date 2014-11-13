@@ -1,4 +1,7 @@
 
+#outputwindow {width:900px; height:700px; border:4px solid #000;}
+#gamewindow {width:100%;}
+
 
 .smallbox {url(img/smallbox.png);}
 .mediumbox {url(img/mediumbox.png);}

@@ -12,6 +12,8 @@ var exitpos = 990;
 
 var halfsecs = 0;
 
+var BELT_WIDTH = 50;
+
 var MAINBELT_LENGTH = 1000;
 var BACKBELT_LENGTH = 1000;
 
@@ -26,6 +28,10 @@ var PARCEL_LARGE = 3;
 
 var LOOPTIME = 500;
 var timer;
+
+var HORIZONTAL = 1, VERTICAL = 2;
+
+var ctx;
 
 
 function onLoad() {
@@ -43,10 +49,38 @@ function onLoad() {
 
 
 	var outputwindow = document.getElementById('outputwindow');
+	var gs = document.getElementById('gamescreen');
+	ctx = gs.getContext('2d');
+
+	alert(gs.scrollWidth);
+	
 	document.addEventListener("keyup", keyPressed, false);
 
 	timer = setInterval(onTimer, LOOPTIME);
-}1
+	
+	drawLayout();
+}
+
+
+function drawBelt(x1, y1, x2, y2, colour) {
+
+
+	ctx.strokeStyle = colour;
+
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.stroke();
+
+	ctx.moveTo(x1, y1+BELT_WIDTH);
+	ctx.lineTo(x2, y2+BELT_WIDTH);
+	ctx.stroke();
+}
+
+
+function drawLayout() {
+
+	drawBelt(30, 10, 800, 10, '#f00', HORIZONTAL);
+}
 
 
 function keyPressed(e) {

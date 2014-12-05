@@ -1,6 +1,25 @@
 
-#outputwindow {width:900px; height:700px; border:4px solid #000;}
-#gamewindow {width:100%;}
+
+
+@media screen and (min-width:950px) and (orientation:landscape) {
+  #outputwindow {width:950px; background-color:#000; color:#fff; border:0; margin:0; padding:0;}
+  #background {position:absolute; width:900px; z-index:0; left:0; top:0; border:0; margin:0; padding:0;}
+  #gamewindow {position:absolute; width:900px; z-index:1; left:0; top:0; border:0; margin:0; padding:0;}
+}
+
+@media screen and (min-width:800px) and (max-width:949px) and (orientation:landscape) {
+  #outputwindow {width:800px; background-color:#000; color:#fff; border:0; margin:0; padding:0;}
+  #background {position:absolute; width:750px; z-index:0; left:0; top:0; border:0; margin:0; padding:0;}
+  #gamewindow {position:absolute; width:750px; z-index:1; left:0; top:0; border:0; margin:0; padding:0;}
+}
+
+
+@media screen and (min-width:500px) and (max-width:749px) and (orientation:landscape) {
+  #outputwindow {width:500px; background-color:#000; color:#fff; border:0; margin:0; padding:0;}
+  #background {position:absolute; width:450px; z-index:0; left:0; top:0; border:0; margin:0; padding:0;}
+  #gamewindow {position:absolute; width:450px; z-index:1; left:0; top:0; border:0; margin:0; padding:0;}
+}
+
 
 
 .smallbox {url(img/smallbox.png);}

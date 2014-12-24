@@ -7,7 +7,32 @@ function Transfer(id, slot, state, speed, dest) {
 	this.speed = speed;
 	this.dest = dest;
 	this.redraw = 0;
+	
+	this.draw = function(ctx, x, y) {
+		var wheels = BELT_WIDTH/6;
+		var x = (SLOT_SIZE*this.slot);
+	
+		ctx.beginPath();
+
+		ctx.strokeStyle = '#fff';
+		ctx.clearRect(x, this.y, SLOT_SIZE-2, BELT_WIDTH-2);
+
+
+		for (j=0; j<BELT_WIDTH; j+=wheels) {
+			var y = this.y+j;
+
+			ctx.moveTo(x, y);
+
+			if (this.state == TRANSFER_MOVE) y = this.y+j+wheels;
+
+			ctx.lineTo(x+SLOT_SIZE, y);
+			ctx.stroke(); 
+
+			this.redraw = 0;
+		}
+	}
 }
+
 
 var TRANSFER_NORMAL = 0;
 var TRANSFER_MOVE = 1;
@@ -51,6 +76,9 @@ var parcelList = new Array();
 var mainline = new Array();
 var backline = new Array();
 var outfeeds = new Array();
+var rejectbend = new Array();
+var returnbend = new Array();
+
 
 //var transfers = [12,16,20,24,28];
 var transfers = new Array();
@@ -62,6 +90,7 @@ var halfsecs = 0;
 
 var MAINBELT_SLOTS = 30;
 var OUTFEED_SLOTS = 12;
+var BEND_SLOTS = 5;
 
 var OUTFEED_COUNT = 5;
 
@@ -86,6 +115,12 @@ function onLoad() {
 
 	for (var i = 0; i < MAINBELT_SLOTS; i++)
 		backline[i] = 0;
+
+	for (var i = 0; i < BEND_SLOTS; i++)
+		rejectbend[i] = 0;
+	
+	for (var i = 0; i < BEND_SLOTS; i++)
+		returnbend[i] = 0;
 
 	for (var i = 0; i < OUTFEED_COUNT; i++) {
 		outfeeds[i] = new Array();
@@ -129,6 +164,7 @@ function onLoad() {
 	//alert(gs.scrollWidth);
 
 	document.addEventListener("keyup", keyPressed, false);
+	document.addEventListener("click", mouseClicked, false);
 
 	timer = setInterval(onTimer, LOOPTIME);
 
@@ -221,6 +257,7 @@ function drawLayout(ctx) {
 	  drawBelt(ctx, transfers[i].slot*SLOT_SIZE, origin.y+(BELT_WIDTH*4), transfers[i].slot*SLOT_SIZE, origin.y+(BELT_WIDTH*4)+OUTFEED_LENGTH, '#fff', VERTICAL);
 
 	for (i=0; i<transfers.length; i++)
+		//transfers[i].draw(ctx, SLOT_SIZE*3, BELT_WIDTH*6);
 		drawTransfer(ctx, i);
 }
 
@@ -232,6 +269,12 @@ function drawParcels(ctx, belt) {
 	var beltwidth12 = BELT_WIDTH/2;
 	var slotcount = MAINBELT_SLOTS;
 	
+	var bendPath = [{x:MAINBELT_LENGTH+(SLOT_SIZE*3),y:(BELT_WIDTH*6)},
+	                {x:MAINBELT_LENGTH+(SLOT_SIZE*4)-beltwidth12,y:(BELT_WIDTH*6)},
+	                {x:MAINBELT_LENGTH+(SLOT_SIZE*5)-beltwidth12,y:(BELT_WIDTH*5)},
+	                {x:MAINBELT_LENGTH+(SLOT_SIZE*4),y:(BELT_WIDTH*4)},
+	                {x:MAINBELT_LENGTH+(SLOT_SIZE*3),y:(BELT_WIDTH*3)}];
+	
 	if (belt == 'main') var startpos = {x:SLOT_SIZE*2, y:(BELT_WIDTH*6)+3};
 	if (belt == 'back') var startpos = {x:SLOT_SIZE*2, y:(BELT_WIDTH*3)+3};
 	if (belt == 'out1') var startpos = {x:SLOT_SIZE*transfers[0].slot, y:(BELT_WIDTH*7)+3};
@@ -239,13 +282,14 @@ function drawParcels(ctx, belt) {
 	if (belt == 'out3') var startpos = {x:SLOT_SIZE*transfers[2].slot, y:(BELT_WIDTH*7)+3};
 	if (belt == 'out4') var startpos = {x:SLOT_SIZE*transfers[3].slot, y:(BELT_WIDTH*7)+3};
 	if (belt == 'out5') var startpos = {x:SLOT_SIZE*transfers[4].slot, y:(BELT_WIDTH*7)+3};
+	if (belt == 'rejectbend') var startpos = {x:bendPath[0].x, y:bendPath[0].y};
 
-
-	if (belt != 'main' && belt != 'back')
+	if (belt.substr(0,3) == 'out')
 		slotcount = OUTFEED_SLOTS;
+	else if (belt == 'rejectbend')
+		slotcount = BEND_SLOTS;
 
 	for (var i=0; i<slotcount; i++) {
-		
 		if (belt == 'main') var parcel = getParcel(mainline[i]);
 		if (belt == 'back') var parcel = getParcel(backline[i]);
 		if (belt == 'out1') var parcel = getParcel(outfeeds[0][i]);
@@ -253,18 +297,22 @@ function drawParcels(ctx, belt) {
 		if (belt == 'out3') var parcel = getParcel(outfeeds[2][i]);
 		if (belt == 'out4') var parcel = getParcel(outfeeds[3][i]);
 		if (belt == 'out5') var parcel = getParcel(outfeeds[4][i]);
-
+		if (belt == 'rejectbend') var parcel = getParcel(rejectbend[i]);
+		
 		if (parcel != -1) {
 			var p = new Parcel(parcel);
 			
-			if (belt.substr(0,3) == 'out') {
+			if (belt.substr(0,3) == 'out')
 				p.draw(ctx, startpos.x, startpos.y+(SLOT_SIZE*i), SLOT_SIZE);
-			}
+			else if (belt == 'rejectbend')
+				p.draw(ctx, bendPath[i].x, bendPath[i].y, SLOT_SIZE);
 			else p.draw(ctx, startpos.x+(i*SLOT_SIZE), startpos.y, SLOT_SIZE);
 		}
 		else {
 			if (belt == 'main' || belt == 'back')
 				ctx.clearRect(startpos.x+(i*SLOT_SIZE), startpos.y, SLOT_SIZE, BELT_WIDTH);
+			else if (belt == 'rejectbend')
+				ctx.clearRect(bendPath[i].x, bendPath[i].y, SLOT_SIZE, BELT_WIDTH);
 			else ctx.clearRect(startpos.x, startpos.y+(i*SLOT_SIZE), BELT_WIDTH, SLOT_SIZE);
 		}
 	}
@@ -304,11 +352,18 @@ function keyPressed(e) {
 }
 
 
+function mouseClicked(e) {
+	console.log('mouse clicked at: ' + e.clientX + ',' + e.clientY);
+}
+
+
+
 function moveBelts() {
 
+	// main line
 	for (var i=MAINBELT_SLOTS-1; i>=0; i--) {
 		if (i == MAINBELT_SLOTS-1 && mainline[i] != 0) {
-			backline[i] = mainline[i];
+			rejectbend[0] = mainline[i];
 			mainline[i] = 0;
 		}
 		else {
@@ -317,7 +372,22 @@ function moveBelts() {
 		}
 	}
 
+	
+	// reject bend
+	for (var i=BEND_SLOTS-1; i>=0; i--) {
+		if (i == BEND_SLOTS-1 && rejectbend[i] != 0) {
+			if (backline[MAINBELT_SLOTS-1] != 0) endGame();
+			backline[MAINBELT_SLOTS-1] = rejectbend[i];
+			rejectbend[i] = 0;
+		}
+		else {
+ 		  rejectbend[i] = rejectbend[i-1];
+		  rejectbend[i-1] = 0;
+		}
+	}
 
+
+	// back line
 	for (var i=1; i<MAINBELT_SLOTS; i++) {
 		if (backline[i-1] == 0 && backline[i] != 0) {
 		  backline[i-1] = backline[i];
@@ -326,6 +396,7 @@ function moveBelts() {
 	}
 
 
+	// outfeeds
 	for (var i=0; i<outfeeds.length; i++) {
   	  for (var j=OUTFEED_SLOTS-1; j >=0; j--) {
 		if (outfeeds[i][j] == 0) {
@@ -351,6 +422,7 @@ function onTimer() {
 	drawParcels(gsctx, 'out3');
 	drawParcels(gsctx, 'out4');
 	drawParcels(gsctx, 'out5');
+	drawParcels(gsctx, 'rejectbend');
 
 	// generate new parcel after preset 'gap'
 	if ((halfsecs % PARCEL_FREQUENCY) == 0) {
@@ -435,6 +507,11 @@ function moveParcel(parcelid, belt) {
 			}
 		}
 	}
+}
+
+
+function endGame() {
+	clearInterval(timer);
 }
 
 
